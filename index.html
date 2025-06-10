@@ -13,6 +13,7 @@
             --light: #f8fafc;
             --gray: #94a3b8;
             --success: #10b981;
+            --error: #ef4444;
         }
         
         * {
@@ -144,6 +145,11 @@
             border: 5px solid var(--primary);
             margin-bottom: 25px;
             background: linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3rem;
         }
         
         .hero h1 {
@@ -400,6 +406,21 @@
             color: var(--primary);
         }
         
+        .telegram-info {
+            background: #0088cc;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .telegram-info i {
+            font-size: 1.5rem;
+        }
+        
         .contact-form {
             background: white;
             border-radius: 15px;
@@ -556,10 +577,32 @@
             z-index: 1000;
             transform: translateX(150%);
             transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .notification.error {
+            background: var(--error);
         }
         
         .notification.show {
             transform: translateX(0);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -581,7 +624,9 @@
     
     <!-- Notification -->
     <div class="notification" id="notification">
-        Pesan berhasil dikirim! Saya akan segera menghubungi Anda.
+        <i class="fas fa-check-circle"></i>
+        <span id="notification-text">Pesan berhasil dikirim ke Telegram!</span>
+        <div class="loading" id="loading" style="display: none;"></div>
     </div>
     
     <!-- Page Content -->
@@ -589,7 +634,9 @@
         <!-- Home Page -->
         <div id="home-page" class="page active">
             <div class="hero">
-                <div class="profile-img"></div>
+                <div class="profile-img">
+                    <i class="fas fa-user"></i>
+                </div>
                 <h1>BAYU PERMANA</h1>
                 <h2>Full Stack Developer & UI/UX Designer</h2>
                 <p>Saya seorang developer profesional dengan pengalaman lebih dari 8 tahun dalam membangun aplikasi web dan mobile. Spesialis dalam JavaScript ecosystem dengan fokus pada React, Node.js, dan sistem terdistribusi.</p>
@@ -599,7 +646,7 @@
                     <a href="#"><i class="fab fa-linkedin-in"></i></a>
                     <a href="#"><i class="fab fa-twitter"></i></a>
                     <a href="#"><i class="fab fa-instagram"></i></a>
-                    <a href="#"><i class="fab fa-dribbble"></i></a>
+                    <a href="#"><i class="fab fa-telegram"></i></a>
                 </div>
                 
                 <div class="cta-buttons">
@@ -607,7 +654,7 @@
                         <i class="fas fa-briefcase"></i> Lihat Portfolio
                     </a>
                     <a href="#" class="cta-button secondary" data-page="contact">
-                        <i class="fas fa-envelope"></i> Hubungi Saya
+                        <i class="fas fa-paper-plane"></i> Kirim Pesan
                     </a>
                 </div>
             </div>
@@ -770,17 +817,24 @@
                     </div>
                     
                     <div class="contact-item">
-                        <i class="fas fa-clock"></i>
+                        <i class="fab fa-telegram"></i>
                         <div class="contact-details">
-                            <h4>Jam Kerja</h4>
-                            <p>Senin-Jumat: 09:00 - 17:00 WIB</p>
+                            <h4>Telegram</h4>
+                            <a href="https://t.me/bayupermana">@bayupermana</a>
+                        </div>
+                    </div>
+                    
+                    <div class="telegram-info">
+                        <i class="fab fa-telegram"></i>
+                        <div>
+                            <p>Pesan yang Anda kirim melalui formulir akan langsung masuk ke Telegram saya</p>
                         </div>
                     </div>
                 </div>
                 
                 <div class="contact-form">
-                    <h3>Kirim Pesan</h3>
-                    <form id="contactForm" action="https://formspree.io/f/mvoeyjqg" method="POST">
+                    <h3>Kirim Pesan via Telegram</h3>
+                    <form id="telegramForm">
                         <div class="form-group">
                             <label for="name">Nama Lengkap</label>
                             <input type="text" id="name" name="name" placeholder="Masukkan nama Anda" required>
@@ -793,7 +847,7 @@
                         
                         <div class="form-group">
                             <label for="subject">Subjek</label>
-                            <input type="text" id="subject" name="_subject" placeholder="Subjek pesan Anda" required>
+                            <input type="text" id="subject" name="subject" placeholder="Subjek pesan Anda" required>
                         </div>
                         
                         <div class="form-group">
@@ -802,7 +856,7 @@
                         </div>
                         
                         <button type="submit" class="submit-btn">
-                            <i class="fas fa-paper-plane"></i> Kirim Pesan
+                            <i class="fab fa-telegram"></i> Kirim ke Telegram
                         </button>
                     </form>
                 </div>
@@ -830,6 +884,8 @@
             const navLinks = document.querySelectorAll('.nav-link, .cta-button, .footer-links a');
             const pages = document.querySelectorAll('.page');
             const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notification-text');
+            const loading = document.getElementById('loading');
             
             // Set default active page
             setActivePage('home');
@@ -870,22 +926,82 @@
                 });
             }
             
-            // Contact form submission
-            const contactForm = document.getElementById('contactForm');
-            if (contactForm) {
-                contactForm.addEventListener('submit', function(e) {
+            // Telegram form submission
+            const telegramForm = document.getElementById('telegramForm');
+            if (telegramForm) {
+                telegramForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     
-                    // Show notification
+                    // Show loading indicator
+                    notification.classList.remove('error');
                     notification.classList.add('show');
+                    notificationText.innerHTML = 'Mengirim pesan ke Telegram...';
+                    loading.style.display = 'inline-block';
                     
-                    // Hide notification after 3 seconds
-                    setTimeout(() => {
-                        notification.classList.remove('show');
-                    }, 3000);
+                    // Get form data
+                    const name = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const subject = document.getElementById('subject').value;
+                    const message = document.getElementById('message').value;
                     
-                    // Reset form
-                    contactForm.reset();
+                    // Telegram bot API endpoint
+                    const botToken = '6368782284:AAH6A6w5z7O2a1Hp0vC3p0iP2Z8b3z1Y0cU';
+                    const chatId = '6187166585';
+                    
+                    // Format message for Telegram
+                    const telegramMessage = `
+📨 *Pesan Baru dari Website Portofolio*
+                      
+👤 *Nama:* ${name}
+📧 *Email:* ${email}
+📌 *Subjek:* ${subject}
+                      
+💬 *Pesan:*
+${message}
+                    `;
+                    
+                    // Send message to Telegram
+                    fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: telegramMessage,
+                            parse_mode: 'Markdown'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.ok) {
+                            // Success notification
+                            notificationText.innerHTML = '<i class="fas fa-check-circle"></i> Pesan berhasil dikirim ke Telegram!';
+                            notification.classList.remove('error');
+                            
+                            // Reset form
+                            telegramForm.reset();
+                        } else {
+                            // Error notification
+                            notificationText.innerHTML = '<i class="fas fa-exclamation-circle"></i> Gagal mengirim pesan. Silakan coba lagi.';
+                            notification.classList.add('error');
+                        }
+                    })
+                    .catch(error => {
+                        // Error notification
+                        notificationText.innerHTML = '<i class="fas fa-exclamation-circle"></i> Terjadi kesalahan. Silakan coba lagi.';
+                        notification.classList.add('error');
+                        console.error('Error:', error);
+                    })
+                    .finally(() => {
+                        // Hide loading indicator
+                        loading.style.display = 'none';
+                        
+                        // Hide notification after 5 seconds
+                        setTimeout(() => {
+                            notification.classList.remove('show');
+                        }, 5000);
+                    });
                 });
             }
         });
